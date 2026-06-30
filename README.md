@@ -1,36 +1,89 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TheGanaGallery
+
+A modern Next.js e-commerce storefront for handcrafted Indian home decor — Wall Decor, Cherial Art, Metal Ware, Carved Wooden Decor, Clock Art Paintings, and more.
+
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router) + TypeScript
+- **Styling:** Tailwind CSS v4 (custom luxury/artisan design tokens)
+- **Database & Auth:** Supabase (Postgres + Row Level Security)
+- **State:** Zustand (cart)
+- **Charts:** Recharts (admin dashboard)
+- **Fonts:** Fraunces (display), Geist Sans (body)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create a `.env.local` file in the project root:
 
-## Learn More
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key   # required for admin user list
+NEXT_PUBLIC_SITE_URL=https://yourdomain.com                 # used in SEO metadata, sitemap, OG tags
 
-To learn more about Next.js, take a look at the following resources:
+# Optional — if using Cloudinary for image uploads
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Database Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Run all migrations **in order** in the Supabase SQL Editor (`supabase/migrations/`):
 
-## Deploy on Vercel
+| File | Purpose |
+|---|---|
+| `0003_extend_profiles.sql` | Adds `full_name`, `phone`, `avatar_url` to profiles |
+| `0004_timeline_profile.sql` | Order status timeline support |
+| `0005_cod_settings.sql` | Cash-on-delivery toggle (store settings) |
+| `0006_fix_admin_profiles_policy.sql` | Admin RLS policy fix for profiles |
+| `0007_reviews.sql` | Customer reviews table + approval workflow |
+| `0008_product_slugs.sql` | SEO-friendly product URL slugs |
+| `0009_fix_profile_and_product_delete.sql` | Adds `gender`/`address` to profiles; fixes missing product DELETE policy |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+`0001` and `0002` are legacy reference files (`.bak`) — not run.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Key Features
+
+- **Shop by Collection** — homepage section linking to 8 curated collections
+- **Product cards** — primary/secondary image hover crossfade, centered brand label, fixed 4:5 aspect ratio
+- **SEO** — slug-based product URLs, per-page metadata, OpenGraph/Twitter cards, JSON-LD structured data, auto-generated `sitemap.xml` and `robots.txt`
+- **Customer reviews** — submission form with email verification, admin approval workflow, auto-scrolling carousel with avatars
+- **Floating WhatsApp button** — fixed bottom-right, all pages
+- **Admin panel** (`/admin`) — dashboard with revenue/order/category charts, product management (with collection dropdown + image previews), order management, registered users (live from Supabase Auth), review moderation, store settings
+
+## Project Structure
+
+```
+app/
+  (shop)/          Public storefront routes
+  (admin)/admin/   Admin panel routes
+  api/             API routes (REST-style, Supabase-backed)
+  sitemap.ts       Auto-generated sitemap
+  robots.ts        Auto-generated robots.txt
+components/
+  product/         ProductCard, ProductGallery, ProductsClient
+  home/            CollectionsSection, ReviewsCarousel
+  admin/           ProductForm, AdminSidebar
+  ui/              WhatsAppButton
+lib/
+  supabase-server.ts   Cookie-aware (request-time) + public (build-time) Supabase clients
+  adminAuth.ts         requireAdmin / requireUser helpers
+supabase/migrations/   SQL migrations, run in order
+types/index.ts          Shared TypeScript types
+```
+
+## Notes
+
+- `createServerSupabaseClient()` uses cookies — only call it at **request time** (server components, API routes).
+- `createPublicSupabaseClient()` is cookie-free — use it in `generateStaticParams`, `sitemap.ts`, or anywhere that runs at **build time**.
+- Product URLs are slug-based (`/products/your-product-slug`) with automatic fallback to UUID for old links.
