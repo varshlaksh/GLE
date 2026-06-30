@@ -1,0 +1,22 @@
+-- ============================================================
+-- Promote a user to admin by email
+-- ============================================================
+-- Steps:
+-- 1. First sign up normally via the app's /signup page using this email.
+--    (This auto-creates a row in public.profiles via the
+--     on_auth_user_created trigger from 0001_phase3_orders_admin.sql)
+-- 2. Then run this in the Supabase SQL editor.
+--
+-- This is idempotent — safe to run again later.
+
+update public.profiles
+set is_admin = true
+where id = (
+  select id from auth.users where email = 'dakshsaini5757@gmail.com'
+);
+
+-- Verify it worked:
+select u.email, p.is_admin
+from public.profiles p
+join auth.users u on u.id = p.id
+where u.email = 'dakshsaini5757@gmail.com';
