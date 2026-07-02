@@ -22,11 +22,21 @@ const STATUS_COLORS: Record<string, string> = {
 
 // ── Custom pie label — shows only for segments > 5%
 const renderPieLabel = ({
-  cx, cy, midAngle, innerRadius, outerRadius, percent, category,
+  cx = 0,
+  cy = 0,
+  midAngle = 0,
+  innerRadius = 0,
+  outerRadius = 0,
+  percent = 0,
+  category = "",
 }: {
-  cx: number; cy: number; midAngle: number;
-  innerRadius: number; outerRadius: number;
-  percent: number; category: string;
+  cx?: number;
+  cy?: number;
+  midAngle?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  percent?: number;
+  category?: string;
 }) => {
   if (percent < 0.06) return null;
   const RADIAN = Math.PI / 180;
@@ -108,7 +118,7 @@ export default function AdminOverviewPage() {
                     width={64}
                   />
                   <Tooltip
-                    formatter={(v: number) => [formatPrice(v), "Revenue"]}
+                    formatter={(v) => [formatPrice(Number(v)), "Revenue"]}
                     labelFormatter={(l) => `Date: ${l}`}
                     contentStyle={{ borderRadius: 12, border: "1px solid #e0d3bf", fontSize: 12 }}
                   />
@@ -155,7 +165,7 @@ export default function AdminOverviewPage() {
                       width={76}
                     />
                     <Tooltip
-                      formatter={(v: number) => [v, "Orders"]}
+                      formatter={(v) => [Number(v), "Orders"]}
                       contentStyle={{ borderRadius: 12, border: "1px solid #e0d3bf", fontSize: 12 }}
                     />
                     <Bar dataKey="count" radius={[0, 8, 8, 0]} maxBarSize={28}>
@@ -191,8 +201,8 @@ export default function AdminOverviewPage() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(v: number, _name, props) => [
-                          `${v} product${v !== 1 ? "s" : ""}`,
+                        formatter={(v, _name, props) => [
+                          `${Number(v)} product${Number(v) !== 1 ? "s" : ""}`,
                           props.payload?.category,
                         ]}
                         contentStyle={{ borderRadius: 12, border: "1px solid #e0d3bf", fontSize: 12 }}

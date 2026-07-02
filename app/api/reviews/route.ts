@@ -26,7 +26,7 @@ export async function GET() {
   if (error) {
     return NextResponse.json<ApiResponse<never>>({ error: error.message }, { status: 500 })
   }
-  return NextResponse.json<ApiResponse<Review[]>>({ data: data ?? [] })
+  return NextResponse.json({ data: data ?? [] })
 }
 
 // POST /api/reviews — public, create pending review
