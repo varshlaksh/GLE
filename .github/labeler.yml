@@ -1,0 +1,17 @@
+frontend:
+  - app/(shop)/**
+  - components/**
+
+backend:
+  - app/api/**
+
+admin:
+  - app/(admin)/**
+
+config:
+  - next.config.ts
+  - package.json
+  - tsconfig.json
+
+database:
+  - supabase/**
