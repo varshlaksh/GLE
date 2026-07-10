@@ -25,14 +25,28 @@ export default function AdminProductsPage() {
     load();
   }, []);
 
+  // AFTER
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this product? This cannot be undone.")) return;
     setDeletingId(id);
+    setError(null);
     try {
       const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
       const json = await res.json();
       if (json.error) throw new Error(json.error);
-      setProducts((prev) => prev?.filter((p) => p.id !== id) ?? null);
+
+      if (json.data?.archived) {
+        // Product has orders — show as archived instead of removing from list
+        setProducts((prev) =>
+          prev?.map((p) =>
+            p.id === id ? { ...p, is_archived: true, is_active: false } : p
+          ) ?? null
+        );
+        setError("This product has existing orders — it has been archived and hidden from the shop instead of deleted.");
+      } else {
+        // Fully deleted — remove from list
+        setProducts((prev) => prev?.filter((p) => p.id !== id) ?? null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not delete product");
     } finally {
@@ -123,17 +137,24 @@ export default function AdminProductsPage() {
                   <td className="px-4 py-3 text-ink/70">{product.category}</td>
                   <td className="px-4 py-3 text-ink/70">{formatPrice(product.price)}</td>
                   <td className="px-4 py-3 text-ink/70">{product.stock}</td>
+
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                        product.is_active
-                          ? "bg-moss/10 text-moss"
-                          : "bg-ink/10 text-ink/60"
-                      }`}
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${(product as any).is_archived
+                          ? "bg-clay/10 text-clay"
+                          : product.is_active
+                            ? "bg-moss/10 text-moss"
+                            : "bg-ink/10 text-ink/60"
+                        }`}
                     >
-                      {product.is_active ? "Active" : "Hidden"}
+                      {(product as any).is_archived
+                        ? "Archived"
+                        : product.is_active
+                          ? "Active"
+                          : "Hidden"}
                     </span>
                   </td>
+
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-3">
                       <Link
