@@ -1,42 +1,30 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase-browser";
 import type { Product } from "@/types";
 
-const COLLECTION_CATEGORIES = [
-  "Wall Decor",
-  "Decals Decor",
-  "Table Decor",
-  "Cherial Art",
-  "Dix Decor",
-  "Metal Ware",
-  "Carved Wooden Decor",
-  "Clock Art Painting",
-  "Baskets",
-  "Pottery",
-  "Textiles",
-  "Decor",
-];
+type Category = { id: string; name: string; slug: string };
 
 interface FormValues {
   name:        string;
   description: string;
   price:       string;
-  category:    string;
+  category_id: string;
   stock:       string;
   images:      string[];
   is_active:   boolean;
 }
 
 function toFormValues(product?: Product): FormValues {
-  if (!product) return { name:"", description:"", price:"", category:"", stock:"0", images:[], is_active:true }
+  if (!product) return { name:"", description:"", price:"", category_id:"", stock:"0", images:[], is_active:true }
   return {
     name:        product.name,
     description: product.description,
     price:       (product.price / 100).toString(),
-    category:    product.category,
+    category_id: product.category_id ?? "",
     stock:       product.stock.toString(),
     images:      product.images,
     is_active:   product.is_active,
@@ -46,17 +34,27 @@ function toFormValues(product?: Product): FormValues {
 export default function ProductForm({ product }: { product?: Product }) {
   const router   = useRouter();
   const isEdit   = Boolean(product);
+  const supabase = createClient();
   const [values, setValues]         = useState<FormValues>(toFormValues(product));
   const [error,  setError]          = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading]   = useState(false);
-  const [customCategory, setCustomCategory] = useState(
-    product?.category && !COLLECTION_CATEGORIES.includes(product.category) ? product.category : ""
-  );
-  const [useCustom, setUseCustom] = useState(
-    Boolean(product?.category && !COLLECTION_CATEGORIES.includes(product.category))
-  );
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [customCategory, setCustomCategory] = useState("");
+  const [useCustom, setUseCustom] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function loadCategories() {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("id, name, slug")
+        .eq("is_active", true)
+        .order("display_order");
+      if (!error && data) setCategories(data);
+    }
+    loadCategories();
+  }, []);
 
   const set = <K extends keyof FormValues>(k: K, v: FormValues[K]) =>
     setValues(prev => ({ ...prev, [k]: v }));
@@ -64,12 +62,38 @@ export default function ProductForm({ product }: { product?: Product }) {
   const handleCategoryChange = (val: string) => {
     if (val === "__custom__") {
       setUseCustom(true);
-      set("category", customCategory);
+      set("category_id", "");
     } else {
       setUseCustom(false);
-      set("category", val);
+      set("category_id", val);
     }
   };
+
+  function slugify(name: string) {
+    return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  }
+
+  async function resolveCategoryId(): Promise<string> {
+    if (!useCustom) return values.category_id;
+
+    const slug = slugify(customCategory);
+    const { data: existing } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (existing) return existing.id;
+
+    const { data, error } = await supabase
+      .from("categories")
+      .insert({ name: customCategory.trim(), slug, is_active: false, display_order: 99 })
+      .select("id")
+      .single();
+
+    if (error) throw new Error("Could not create custom category");
+    return data.id;
+  }
 
   // ── Cloudinary upload ────────────────────────────────
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,24 +137,25 @@ export default function ProductForm({ product }: { product?: Product }) {
     setError(null);
     const price = Number(values.price);
     const stock = Number(values.stock);
-    const finalCategory = useCustom ? customCategory.trim() : values.category;
-    if (!values.name.trim() || !finalCategory) {
+    if ((!useCustom && !values.category_id) || (useCustom && !customCategory.trim())) {
       setError("Name and category are required"); return;
     }
+    if (!values.name.trim()) { setError("Name and category are required"); return; }
     if (Number.isNaN(price) || price < 0) { setError("Price must be a valid number"); return; }
     if (Number.isNaN(stock) || stock < 0) { setError("Stock must be a valid number"); return; }
 
     setSubmitting(true);
-    const payload = {
-      name:        values.name.trim(),
-      description: values.description.trim(),
-      price:       Math.round(price * 100),
-      category:    finalCategory,
-      stock:       Math.round(stock),
-      images:      values.images,
-      is_active:   values.is_active,
-    };
     try {
+      const resolvedCategoryId = await resolveCategoryId();
+      const payload = {
+        name:        values.name.trim(),
+        description: values.description.trim(),
+        price:       Math.round(price * 100),
+        category_id: resolvedCategoryId,
+        stock:       Math.round(stock),
+        images:      values.images,
+        is_active:   values.is_active,
+      };
       const url = isEdit ? `/api/admin/products/${product!.id}` : "/api/admin/products";
       const res  = await fetch(url, {
         method: isEdit ? "PATCH" : "POST",
@@ -165,13 +190,13 @@ export default function ProductForm({ product }: { product?: Product }) {
         </p>
         <select
           id="category"
-          value={useCustom ? "__custom__" : values.category}
+          value={useCustom ? "__custom__" : values.category_id}
           onChange={e => handleCategoryChange(e.target.value)}
           className="mt-1.5 w-full rounded-lg border border-sand-dark bg-white px-3.5 py-2.5 text-sm text-ink focus:border-clay focus:outline-none focus:ring-2 focus:ring-clay/20"
         >
           <option value="">— Select a collection —</option>
-          {COLLECTION_CATEGORIES.map(c => (
-            <option key={c} value={c}>{c}</option>
+          {categories.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
           ))}
           <option value="__custom__">Other (custom)…</option>
         </select>
@@ -179,14 +204,16 @@ export default function ProductForm({ product }: { product?: Product }) {
           <input
             type="text"
             value={customCategory}
-            onChange={e => { setCustomCategory(e.target.value); set("category", e.target.value); }}
+            onChange={e => setCustomCategory(e.target.value)}
             placeholder="Enter custom category…"
             className="mt-2 w-full rounded-lg border border-sand-dark bg-white px-3.5 py-2.5 text-sm text-ink focus:border-clay focus:outline-none focus:ring-2 focus:ring-clay/20"
           />
         )}
-        {values.category && (
+        {(values.category_id || (useCustom && customCategory)) && (
           <p className="mt-1 text-xs text-moss">
-            ✓ Category: <strong>{useCustom ? customCategory : values.category}</strong>
+            ✓ Category: <strong>
+              {useCustom ? customCategory : categories.find(c => c.id === values.category_id)?.name}
+            </strong>
           </p>
         )}
       </div>

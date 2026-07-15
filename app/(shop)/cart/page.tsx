@@ -77,7 +77,7 @@ export default function CartPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <span className="text-xs font-medium uppercase tracking-wide text-clay">
-                        {product.category}
+                        {product.categories?.name ?? product.category}
                       </span>
                       <Link
                         href={`/products/${product.id}`}

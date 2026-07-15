@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data, error: dbError } = await supabase
     .from("products")
-    .select("*")
+    .select("*, categories(name, slug)")
     .order("created_at", { ascending: false })
 
   if (dbError) {
@@ -25,7 +25,7 @@ interface CreateProductBody {
   description: string
   price: number
   images: string[]
-  category: string
+  category_id: string
   stock: number
   is_active?: boolean
 }
@@ -43,13 +43,12 @@ export async function POST(request: Request) {
     return NextResponse.json<ApiResponse<never>>({ error: "Invalid request body" }, { status: 400 })
   }
 
-  if (!body.name || body.price == null || !body.category) {
+if (!body.name || body.price == null || !body.category_id) {
     return NextResponse.json<ApiResponse<never>>(
       { error: "name, price, and category are required" },
       { status: 400 }
     )
   }
-
   const { data, error: dbError } = await supabase
     .from("products")
     .insert({
@@ -57,7 +56,7 @@ export async function POST(request: Request) {
       description: body.description ?? "",
       price: body.price,
       images: body.images ?? [],
-      category: body.category,
+      category_id: body.category_id,
       stock: body.stock ?? 0,
       is_active: body.is_active ?? true,
     })

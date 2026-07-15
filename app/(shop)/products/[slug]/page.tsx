@@ -17,7 +17,7 @@ async function getProduct(slug: string): Promise<Product | null> {
   // Try slug first
   let { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select("*, categories(name, slug)")
     .eq("slug", slug)
     .eq("is_active", true)
     .single();
@@ -28,7 +28,7 @@ async function getProduct(slug: string): Promise<Product | null> {
     if (uuidRegex.test(slug)) {
       ({ data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("*, categories(name, slug)")
         .eq("id", slug)
         .eq("is_active", true)
         .single());
@@ -43,8 +43,8 @@ async function getRelated(product: Product): Promise<Product[]> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("products")
-    .select("*")
-    .eq("category", product.category)
+    .select("*, categories(name, slug)")
+    .eq("category_id", product.category_id)
     .eq("is_active", true)
     .neq("id", product.id)
     .limit(4);
@@ -77,10 +77,11 @@ export async function generateMetadata({
     return { title: "Product Not Found | TheGanaGallery" };
   }
 
+  const categoryName = product.categories?.name ?? product.category;
   const title       = `${product.name} | TheGanaGallery`;
   const description = product.description
     ? product.description.slice(0, 160)
-    : `Buy ${product.name} — handcrafted ${product.category} from TheGanaGallery.`;
+    : `Buy ${product.name} — handcrafted ${categoryName} from TheGanaGallery.`;
   const image = product.images[0];
   const url   = `${SITE_URL}/products/${product.slug}`;
 
@@ -121,6 +122,7 @@ export default async function ProductDetailPage({
   if (!product) notFound();
 
   const related = await getRelated(product);
+  const categoryName = product.categories?.name ?? product.category;
 
   // JSON-LD structured data
   const jsonLd = {
@@ -130,7 +132,7 @@ export default async function ProductDetailPage({
     description: product.description,
     image:       product.images,
     sku:         product.id,
-    category:    product.category,
+    category:    categoryName,
     offers: {
       "@type":        "Offer",
       price:          (product.price / 100).toFixed(2),
@@ -160,10 +162,10 @@ export default async function ProductDetailPage({
             <li aria-hidden="true" className="mx-1">/</li>
             <li>
               <Link
-                href={`/products?category=${encodeURIComponent(product.category)}`}
+                href={`/products?category=${encodeURIComponent(categoryName)}`}
                 className="hover:text-clay"
               >
-                {product.category}
+                {categoryName}
               </Link>
             </li>
             <li aria-hidden="true" className="mx-1">/</li>
@@ -176,7 +178,7 @@ export default async function ProductDetailPage({
 
           <div className="flex flex-col">
             <span className="text-sm font-medium uppercase tracking-widest text-clay">
-              {product.category}
+              {categoryName}
             </span>
             <h1 className="mt-2 font-display text-3xl text-ink sm:text-4xl">
               {product.name}
@@ -198,7 +200,7 @@ export default async function ProductDetailPage({
             <dl className="mt-10 grid grid-cols-2 gap-4 border-t border-sand-dark/60 pt-6 text-sm">
               <div>
                 <dt className="text-ink/50">Category</dt>
-                <dd className="font-medium text-ink">{product.category}</dd>
+                <dd className="font-medium text-ink">{categoryName}</dd>
               </div>
               <div>
                 <dt className="text-ink/50">Availability</dt>

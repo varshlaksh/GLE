@@ -26,7 +26,7 @@ async function getFeaturedProducts(): Promise<Product[]> {
   const supabase = await createServerSupabaseClient();
   const { data, error } = await supabase
     .from("products")
-    .select("*")
+    .select("*, categories(name, slug)")
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(4);

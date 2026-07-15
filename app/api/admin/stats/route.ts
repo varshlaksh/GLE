@@ -10,12 +10,12 @@ export async function GET() {
   }
 
   // Parallel queries
-  const [ordersRes, productsRes, profilesRes] = await Promise.all([
+const [ordersRes, productsRes, profilesRes] = await Promise.all([
     supabase
       .from("orders")
-      .select("id, status, total, created_at, items:order_items(product:products(category))")
+      .select("id, status, total, created_at, items:order_items(product:products(category_id, categories(name)))")
       .order("created_at", { ascending: false }),
-    supabase.from("products").select("id, stock, category"),
+    supabase.from("products").select("id, stock, category_id, categories(name)"),
     supabase.from("profiles").select("id, created_at"),
   ])
 
@@ -55,9 +55,10 @@ export async function GET() {
   }))
 
   // ── Top categories ───────────────────────────────────
-  const catMap: Record<string, number> = {}
+const catMap: Record<string, number> = {}
   products.forEach(p => {
-    if (p.category) catMap[p.category] = (catMap[p.category] ?? 0) + 1
+   const catName = (p as unknown as { categories?: { name: string } | null }).categories?.name
+    if (catName) catMap[catName] = (catMap[catName] ?? 0) + 1
   })
   const topCategories = Object.entries(catMap)
     .map(([category, count]) => ({ category, count }))
