@@ -134,7 +134,7 @@ export default function AdminProductsPage() {
                       <span className="font-medium text-ink">{product.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-ink/70">{product.category}</td>
+                  <td className="px-4 py-3 text-ink/70">{product.categories?.name ?? product.category}</td>
                   <td className="px-4 py-3 text-ink/70">{formatPrice(product.price)}</td>
                   <td className="px-4 py-3 text-ink/70">{product.stock}</td>
 
