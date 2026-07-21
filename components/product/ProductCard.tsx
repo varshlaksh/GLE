@@ -8,8 +8,8 @@ import { formatPrice } from "@/lib/mockData";
 
 export default function ProductCard({ product }: { product: Product }) {
   const outOfStock    = product.stock <= 0;
-  const primaryImage  = product.images[0];
-  const secondaryImage = product.images[1] ?? null;
+  const primaryImage  = product.images?.[0] ?? null;
+  const secondaryImage = product.images?.[1] ?? null;
   const [hovered, setHovered] = useState(false);
 
   // Use slug when available, fallback to id for safety
@@ -22,20 +22,22 @@ export default function ProductCard({ product }: { product: Product }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Image — fixed 4:5 portrait ratio for consistency */}
+{/* Image — fixed 4:5 portrait ratio for consistency */}
       <div className="relative aspect-[4/5] overflow-hidden bg-sand">
         {/* Primary image */}
-        <Image
-          src={primaryImage}
-          alt={product.name}
-          fill
-          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
-          className={`object-cover transition-all duration-500 ease-in-out ${
-            secondaryImage && hovered
-              ? "opacity-0 scale-105"
-              : "opacity-100 scale-100"
-          }`}
-        />
+        {primaryImage && (
+          <Image
+            src={primaryImage}
+            alt={product.name}
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            className={`object-cover transition-all duration-500 ease-in-out ${
+              secondaryImage && hovered
+                ? "opacity-0 scale-105"
+                : "opacity-100 scale-100"
+            }`}
+          />
+        )}
 
         {/* Secondary image — desktop hover only */}
         {secondaryImage && (
@@ -62,7 +64,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="flex flex-1 flex-col gap-0.5 p-4 text-center">
         {/* Brand / Category */}
         <span className="text-xs font-semibold uppercase tracking-widest text-clay">
-          {product.category}
+          {product.categories?.name ?? product.category}
         </span>
 
         {/* Product name */}

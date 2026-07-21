@@ -23,15 +23,18 @@ function ProductsContent() {
     return () => { active = false; };
   }, []);
 
-  const categories = useMemo(() => {
+const categories = useMemo(() => {
     if (!products) return [];
-    return Array.from(new Set(products.map((p) => p.category)));
+    return Array.from(
+      new Set(products.map((p) => p.categories?.name ?? p.category).filter(Boolean))
+    ) as string[];
   }, [products]);
 
   const filtered = useMemo(() => {
     if (!products) return [];
     return products.filter((p) => {
-      const matchCat    = activeCategory === "All" || p.category === activeCategory;
+      const catName     = p.categories?.name ?? p.category;
+      const matchCat    = activeCategory === "All" || catName === activeCategory;
       const matchSearch = p.name.toLowerCase().includes(search.trim().toLowerCase());
       return matchCat && matchSearch;
     });

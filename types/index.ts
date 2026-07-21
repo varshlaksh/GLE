@@ -7,6 +7,8 @@ export interface Product {
   price:       number
   images:      string[]
   category:    string
+  category_id:  string;
+  categories?:  { name: string; slug: string } | null;
   stock:       number
   is_active:   boolean
   created_at:  string
