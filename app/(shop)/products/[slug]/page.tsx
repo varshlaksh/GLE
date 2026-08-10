@@ -8,7 +8,7 @@ import { createServerSupabaseClient, createPublicSupabaseClient } from "@/lib/su
 import { formatPrice } from "@/lib/mockData";
 import type { Product } from "@/types";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://theganagallery.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.ganagallery.shop";
 
 // ── Data fetchers ─────────────────────────────────────────────
 async function getProduct(slug: string): Promise<Product | null> {

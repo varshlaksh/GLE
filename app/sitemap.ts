@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createPublicSupabaseClient } from "@/lib/supabase-server";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://theganagallery.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.ganagallery.shop";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Uses public client — no cookies needed at build time
