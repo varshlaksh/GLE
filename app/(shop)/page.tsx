@@ -7,7 +7,7 @@ import ReviewsCarousel from "@/components/home/ReviewsCarousel";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import type { Product } from "@/types";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://theganagallery.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.ganagallery.shop";
 
 export const metadata: Metadata = {
   title: "TheGanaGallery — Handcrafted Indian Decor & Art",
