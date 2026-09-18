@@ -31,9 +31,10 @@ export function useUser() {
 }
 
 // ── Sign Up ───────────────────────────────────────────
-export async function signUp(email: string, password: string) {
+export async function signUp(email: string, password: string, emailRedirectTo?: string) {
   const supabase = createClient()
-  const { data, error } = await supabase.auth.signUp({ email, password })
+  const redirectTo = emailRedirectTo ?? `${window.location.origin}/auth/callback`
+  const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } })
   if (error) throw new Error(error.message)
   return data
 }
@@ -42,7 +43,13 @@ export async function signUp(email: string, password: string) {
 export async function signIn(email: string, password: string) {
   const supabase = createClient()
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) throw new Error(error.message)
+  if (error) {
+    // Provide clearer message for unconfirmed email
+    if (error.code === 'email_not_confirmed') {
+      throw new Error('Please confirm your email address before signing in.')
+    }
+    throw new Error(error.message)
+  }
   return data
 }
 

@@ -31,7 +31,7 @@ export default function SignupPage() {
     try {
       await signUp(email, password);
       setSuccess(true);
-      setTimeout(() => router.push("/login"), 2000);
+      // Do not auto-redirect; let user read the message and go to /login when ready
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
