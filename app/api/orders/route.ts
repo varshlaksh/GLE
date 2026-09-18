@@ -15,11 +15,16 @@ interface CreateOrderBody {
 
 export async function POST(request: Request) {
   const { error, status, supabase, user } = await requireUser()
+
   if (error || !user || !supabase) {
-    return NextResponse.json<ApiResponse<never>>({ error }, { status })
+    return NextResponse.json<ApiResponse<never>>(
+      { error },
+      { status }
+    )
   }
 
   let body: CreateOrderBody
+
   try {
     body = await request.json()
   } catch {
@@ -39,13 +44,24 @@ export async function POST(request: Request) {
   } = body
 
   if (!items?.length) {
-    return NextResponse.json<ApiResponse<never>>({ error: "Cart is empty" }, { status: 400 })
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Cart is empty" },
+      { status: 400 }
+    )
   }
+
   if (!shipping_address) {
-    return NextResponse.json<ApiResponse<never>>({ error: "Shipping address is required" }, { status: 400 })
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Shipping address is required" },
+      { status: 400 }
+    )
   }
+
   if (payment_method !== "online" && payment_method !== "cod") {
-    return NextResponse.json<ApiResponse<never>>({ error: "Invalid payment method" }, { status: 400 })
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Invalid payment method" },
+      { status: 400 }
+    )
   }
 
   let orderStatus: Order["status"]
@@ -70,7 +86,11 @@ export async function POST(request: Request) {
     timelineNote = "Order placed — Cash on Delivery"
   } else {
     // Online payment — verify Razorpay signature
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (
+      !razorpay_order_id ||
+      !razorpay_payment_id ||
+      !razorpay_signature
+    ) {
       return NextResponse.json<ApiResponse<never>>(
         { error: "Missing payment verification details" },
         { status: 400 }
@@ -78,6 +98,7 @@ export async function POST(request: Request) {
     }
 
     let signatureValid: boolean
+
     try {
       signatureValid = verifyRazorpaySignature({
         orderId: razorpay_order_id,
@@ -86,26 +107,46 @@ export async function POST(request: Request) {
       })
     } catch (err) {
       return NextResponse.json<ApiResponse<never>>(
-        { error: err instanceof Error ? err.message : "Signature verification failed" },
+        {
+          error:
+            err instanceof Error
+              ? err.message
+              : "Signature verification failed",
+        },
         { status: 500 }
       )
     }
 
     if (!signatureValid) {
-      return NextResponse.json<ApiResponse<never>>({ error: "Payment verification failed" }, { status: 400 })
+      return NextResponse.json<ApiResponse<never>>(
+        { error: "Payment verification failed" },
+        { status: 400 }
+      )
     }
 
     orderStatus = "paid"
     timelineNote = "Payment confirmed"
   }
 
-  const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0)
+  const total = items.reduce(
+    (sum, i) => sum + i.product.price * i.quantity,
+    0
+  )
 
   const statusHistory = [
-    { status: "pending", timestamp: new Date().toISOString(), note: "Order placed" },
+    {
+      status: "pending",
+      timestamp: new Date().toISOString(),
+      note: "Order placed",
+    },
   ]
+
   if (orderStatus !== "pending") {
-    statusHistory.push({ status: orderStatus, timestamp: new Date().toISOString(), note: timelineNote })
+    statusHistory.push({
+      status: orderStatus,
+      timestamp: new Date().toISOString(),
+      note: timelineNote,
+    })
   }
 
   const { data: order, error: orderError } = await supabase
@@ -117,9 +158,12 @@ export async function POST(request: Request) {
       total,
       shipping_address,
       payment_method,
+
+      // Razorpay payment details
       ...(payment_method === "online" && {
         razorpay_order_id,
         razorpay_payment_id,
+        razorpay_signature, // FIX: save signature
       }),
     })
     .select()
@@ -144,18 +188,30 @@ export async function POST(request: Request) {
     .insert(orderItems)
 
   if (itemsError) {
-    return NextResponse.json<ApiResponse<never>>({ error: itemsError.message }, { status: 500 })
+    return NextResponse.json<ApiResponse<never>>(
+      { error: itemsError.message },
+      { status: 500 }
+    )
   }
 
-  return NextResponse.json<ApiResponse<{ orderId: string; status: string }>>({
-    data: { orderId: order.id, status: order.status },
+  return NextResponse.json<
+    ApiResponse<{ orderId: string; status: string }>
+  >({
+    data: {
+      orderId: order.id,
+      status: order.status,
+    },
   })
 }
 
 export async function GET() {
   const { error, status, supabase, user } = await requireUser()
+
   if (error || !user || !supabase) {
-    return NextResponse.json<ApiResponse<never>>({ error }, { status })
+    return NextResponse.json<ApiResponse<never>>(
+      { error },
+      { status }
+    )
   }
 
   const { data, error: ordersError } = await supabase
@@ -165,8 +221,13 @@ export async function GET() {
     .order("created_at", { ascending: false })
 
   if (ordersError) {
-    return NextResponse.json<ApiResponse<never>>({ error: ordersError.message }, { status: 500 })
+    return NextResponse.json<ApiResponse<never>>(
+      { error: ordersError.message },
+      { status: 500 }
+    )
   }
 
-  return NextResponse.json<ApiResponse<Order[]>>({ data: data ?? [] })
+  return NextResponse.json<ApiResponse<Order[]>>({
+    data: data ?? [],
+  })
 }
