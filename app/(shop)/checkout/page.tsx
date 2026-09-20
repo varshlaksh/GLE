@@ -74,11 +74,15 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setError(null);
     try {
+      const cartItems = items.map(({ product, quantity }) => ({
+        productId: product.id,
+        quantity,
+      }));
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items,
+          items: cartItems,
           shipping_address: address,
           payment_method: "cod",
         }),
@@ -102,10 +106,14 @@ export default function CheckoutPage() {
     setSubmitting(true);
     setError(null);
     try {
+      const cartItems = items.map(({ product, quantity }) => ({
+        productId: product.id,
+        quantity,
+      }));
       const createRes = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: total }),
+        body: JSON.stringify({ items: cartItems }),
       });
       const createData = await createRes.json();
       if (!createRes.ok || createData.error) {
@@ -133,7 +141,7 @@ export default function CheckoutPage() {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                items,
+                items: cartItems,
                 shipping_address: address,
                 payment_method: "online",
                 razorpay_order_id: response.razorpay_order_id,

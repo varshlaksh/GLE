@@ -15,12 +15,27 @@ function getAuthHeader() {
   return `Basic ${credentials}`
 }
 
+export function cartHash(items: { productId: string; quantity: number }[]): string {
+  const sorted = [...items].sort((a, b) => a.productId.localeCompare(b.productId))
+  const str = sorted.map(i => `${i.productId}:${i.quantity}`).join(',')
+  return crypto.createHash('sha256').update(str).digest('hex')
+}
+
 export interface RazorpayOrder {
   id: string
   amount: number
   currency: string
   status: string
   receipt?: string
+  notes?: Record<string, string>
+}
+
+export interface RazorpayPayment {
+  id: string
+  order_id: string
+  amount: number
+  currency: string
+  status: string
 }
 
 /**
@@ -74,5 +89,30 @@ export function verifyRazorpaySignature(params: {
     .update(body)
     .digest("hex")
 
-  return expectedSignature === params.signature
+  const expectedBuf = Buffer.from(expectedSignature, 'hex')
+  const signatureBuf = Buffer.from(params.signature, 'hex')
+  if (expectedBuf.length !== signatureBuf.length) return false
+  return crypto.timingSafeEqual(expectedBuf, signatureBuf)
+}
+
+async function razorpayGet<T>(path: string): Promise<T> {
+  const res = await fetch(`${RAZORPAY_BASE_URL}${path}`, {
+    method: "GET",
+    headers: {
+      Authorization: getAuthHeader(),
+    },
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Razorpay GET ${path} failed: ${text}`)
+  }
+  return res.json()
+}
+
+export async function fetchRazorpayPayment(id: string): Promise<RazorpayPayment> {
+  return razorpayGet<RazorpayPayment>(`/payments/${id}`)
+}
+
+export async function fetchRazorpayOrder(id: string): Promise<RazorpayOrder> {
+  return razorpayGet<RazorpayOrder>(`/orders/${id}`)
 }
