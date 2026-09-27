@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireUser } from "@/lib/adminAuth"
 import { createRazorpayOrder, cartHash } from "@/lib/razorpay"
+import { createServiceSupabaseClient } from "@/lib/supabase-server"
 import type { ApiResponse } from "@/types"
 
 interface CartItemInput {
@@ -119,6 +120,58 @@ export async function POST(request: Request) {
       receipt: `rcpt_${user.id.slice(0, 8)}_${Date.now()}`,
       notes: { user_id: user.id, cart_hash: hash },
     })
+
+    // Persist a pending order locally right away (service role – bypasses RLS).
+    // This is what lets the webhook find a matching row even if it arrives
+    // before the browser's own /api/orders confirmation call finishes.
+    const serviceSupabase = createServiceSupabaseClient()
+
+    const statusHistory = [
+      {
+        status: "pending",
+        timestamp: new Date().toISOString(),
+        note: "Order placed",
+      },
+    ]
+
+    const { data: order, error: orderError } = await serviceSupabase
+      .from("orders")
+      .insert({
+        user_id: user.id,
+        status: "pending",
+        status_history: statusHistory,
+        total: totalPaise,
+        shipping_address: {},
+        payment_method: "online",
+        razorpay_order_id: razorpayOrder.id,
+      })
+      .select()
+      .single()
+
+    if (orderError || !order) {
+      return NextResponse.json<ApiResponse<never>>(
+        { error: "Failed to initialize order" },
+        { status: 500 }
+      )
+    }
+
+    const orderItems = body.items.map((item) => ({
+      order_id: order.id,
+      product_id: item.productId,
+      quantity: item.quantity,
+      unit_price: productMap.get(item.productId)!.price,
+    }))
+
+    const { error: itemsError } = await serviceSupabase
+      .from("order_items")
+      .insert(orderItems)
+
+    if (itemsError) {
+      return NextResponse.json<ApiResponse<never>>(
+        { error: "Failed to initialize order" },
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json<ApiResponse<{ razorpayOrderId: string; amount: number; currency: string }>>({
       data: {

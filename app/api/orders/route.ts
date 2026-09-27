@@ -283,51 +283,51 @@ export async function POST(request: Request) {
   let order;
 
   if (payment_method === "online" && razorpay_payment_id) {
-    // Attempt insert; on unique conflict fetch existing and verify ownership
-    const { data: inserted, error: insertError } = await serviceSupabase
+    // The order row already exists as 'pending' (created at
+    // /api/payment/create-order time), possibly already confirmed by the
+    // webhook if it won the race. Update it in place, matched by
+    // razorpay_order_id + user_id, guarded to only touch a still-pending row.
+    const { data: updated, error: updError } = await serviceSupabase
       .from("orders")
-      .insert({
-        user_id: user.id,
+      .update({
         status: orderStatus,
         status_history: statusHistory,
-        total: totalPaise,
-        shipping_address,
-        payment_method,
-        razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature,
+        shipping_address,
       })
+      .eq("razorpay_order_id", razorpay_order_id)
+      .eq("user_id", user.id)
+      .eq("status", "pending")
       .select()
-      .single();
+      .maybeSingle();
 
-    if (!insertError) {
-      order = inserted!;
-    } else if (insertError.code === "23505") {
-      // Unique conflict on razorpay_payment_id – fetch existing order
+    if (updError) {
+      return NextResponse.json<ApiResponse<never>>(
+        { error: updError.message ?? "Failed to confirm order" },
+        { status: 500 }
+      );
+    }
+
+    if (!updated) {
+      // No pending row matched — the webhook likely already confirmed it.
+      // Fetch and return the existing order untouched.
       const { data: existing, error: fetchError } = await serviceSupabase
         .from("orders")
         .select("*")
-        .eq("razorpay_payment_id", razorpay_payment_id)
+        .eq("razorpay_order_id", razorpay_order_id)
+        .eq("user_id", user.id)
         .maybeSingle();
 
       if (fetchError || !existing) {
         return NextResponse.json<ApiResponse<never>>(
-          { error: fetchError?.message ?? "Failed to resolve existing order" },
-          { status: 500 }
-        );
-      }
-      if (existing.user_id !== user.id || existing.razorpay_order_id !== razorpay_order_id) {
-        return NextResponse.json<ApiResponse<never>>(
-          { error: "Order ownership mismatch" },
-          { status: 400 }
+          { error: "Order not found for this payment" },
+          { status: 404 }
         );
       }
       order = existing;
     } else {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: insertError.message ?? "Failed to create order" },
-        { status: 500 }
-      );
+      order = updated;
     }
   } else {
     // COD or other methods – normal insert

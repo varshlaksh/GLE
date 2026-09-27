@@ -113,9 +113,12 @@ BEGIN
             RETURN;
         END IF;
 
+        -- Lookup by razorpay_order_id: the order row is created up-front at
+        -- create-order time (status 'pending', no payment_id yet), so this
+        -- must not depend on razorpay_payment_id already being set.
         SELECT id, total, status INTO v_order_id, v_order_total, v_order_status
         FROM public.orders
-        WHERE razorpay_payment_id = v_payment_id;
+        WHERE razorpay_order_id = (p_payload -> 'payload' -> 'payment' -> 'entity' ->> 'order_id');
 
         IF v_order_id IS NULL THEN
             RAISE EXCEPTION 'order_not_found_for_payment_id %', v_payment_id
@@ -126,6 +129,7 @@ BEGIN
             IF v_order_total = (p_payload -> 'payload' -> 'payment' -> 'entity' ->> 'amount')::integer THEN
                 UPDATE public.orders
                 SET status = 'paid',
+                    razorpay_payment_id = v_payment_id,
                     status_history = COALESCE(status_history, '[]'::jsonb) ||
                                      jsonb_build_array(jsonb_build_object(
                                          'status', 'paid',
@@ -144,7 +148,17 @@ BEGIN
         END IF;
 
     ELSIF v_event = 'payment.failed' THEN
-        -- Never change an existing order; no order -> return
+        -- Mark the pending order as failed. Guarded by status='pending' so
+        -- this can never downgrade an already paid/refunded order.
+        UPDATE public.orders
+        SET status = 'failed',
+            status_history = COALESCE(status_history,'[]'::jsonb) ||
+                             jsonb_build_array(jsonb_build_object(
+                                 'status','failed',
+                                 'timestamp',now(),
+                                 'note','Webhook payment.failed'))
+        WHERE razorpay_order_id = (p_payload -> 'payload' -> 'payment' -> 'entity' ->> 'order_id')
+          AND status = 'pending';
         RETURN;
 
     ELSIF v_event = 'refund.processed' THEN
@@ -160,6 +174,9 @@ BEGIN
             RETURN;
         END IF;
 
+        -- Refunds only ever happen after a payment was captured, so
+        -- razorpay_payment_id is guaranteed to be set by this point.
+        -- This lookup intentionally stays on razorpay_payment_id.
         SELECT id, total, status INTO v_order_id, v_order_total, v_order_status
         FROM public.orders
         WHERE razorpay_payment_id = v_payment_id;
