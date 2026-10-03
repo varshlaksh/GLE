@@ -12,11 +12,10 @@ interface CartItemInput {
 interface CreateOrderBody {
   items: CartItemInput[]
   shipping_address: ShippingAddress
-  payment_method: "online" | "cod"
-  // Required when payment_method === "online"
-  razorpay_order_id?: string
-  razorpay_payment_id?: string
-  razorpay_signature?: string
+  payment_method: "online"
+  razorpay_order_id: string
+  razorpay_payment_id: string
+  razorpay_signature: string
 }
 
 const MAX_QUANTITY = 99
@@ -66,7 +65,7 @@ export async function POST(request: Request) {
     )
   }
 
-  if (payment_method !== "online" && payment_method !== "cod") {
+  if (payment_method !== "online") {
     return NextResponse.json<ApiResponse<never>>(
       { error: "Invalid payment method" },
       { status: 400 }
@@ -147,120 +146,100 @@ export async function POST(request: Request) {
     )
   }
 
-  let orderStatus: Order["status"]
-  let timelineNote: string
-
-  if (payment_method === "cod") {
-    const { data: settings } = await supabase
-      .from("store_settings")
-      .select("cod_enabled")
-      .eq("id", 1)
-      .single()
-
-    if (!settings?.cod_enabled) {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: "Cash on Delivery is not available right now" },
-        { status: 400 }
-      )
-    }
-
-    orderStatus = "pending"
-    timelineNote = "Order placed — Cash on Delivery"
-  } else {
-    if (
-      !razorpay_order_id ||
-      !razorpay_payment_id ||
-      !razorpay_signature
-    ) {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: "Missing payment verification details" },
-        { status: 400 }
-      )
-    }
-
-    let signatureValid: boolean
-
-    try {
-      signatureValid = verifyRazorpaySignature({
-        orderId: razorpay_order_id,
-        paymentId: razorpay_payment_id,
-        signature: razorpay_signature,
-      })
-    } catch (err) {
-      return NextResponse.json<ApiResponse<never>>(
-        {
-          error:
-            err instanceof Error
-              ? err.message
-              : "Signature verification failed",
-        },
-        { status: 500 }
-      )
-    }
-
-    if (!signatureValid) {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: "Payment verification failed" },
-        { status: 400 }
-      )
-    }
-
-    // Fetch payment and order from Razorpay for additional validation
-    let payment: Awaited<ReturnType<typeof fetchRazorpayPayment>>
-    let rpOrder: Awaited<ReturnType<typeof fetchRazorpayOrder>>
-    try {
-      payment = await fetchRazorpayPayment(razorpay_payment_id)
-      rpOrder = await fetchRazorpayOrder(razorpay_order_id)
-    } catch (err) {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: "Failed to fetch payment details from Razorpay" },
-        { status: 500 }
-      )
-    }
-
-    // Handle authorized status with retries
-    if (payment.status === "authorized") {
-      for (let attempt = 0; attempt < 3; attempt++) {
-        await new Promise(res => setTimeout(res, 1000))
-        try {
-          payment = await fetchRazorpayPayment(razorpay_payment_id)
-        } catch {
-          // ignore fetch errors during retry
-        }
-        if (payment.status === "captured") break
-      }
-      if (payment.status !== "captured") {
-        return NextResponse.json<ApiResponse<never>>(
-          { error: "Payment not captured yet" },
-          { status: 409 }
-        )
-      }
-    } else if (payment.status !== "captured") {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: "Payment not captured" },
-        { status: 400 }
-      )
-    }
-
-    // Validate payment and order details
-    const expectedHash = cartHash(items)
-    if (
-      payment.order_id !== razorpay_order_id ||
-      payment.amount !== totalPaise ||
-      payment.currency !== "INR" ||
-      rpOrder.amount !== totalPaise ||
-      rpOrder.notes?.user_id !== user.id ||
-      rpOrder.notes?.cart_hash !== expectedHash
-    ) {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: "Payment details mismatch" },
-        { status: 400 }
-      )
-    }
-
-    orderStatus = "paid"
-    timelineNote = "Payment confirmed"
+  // Verify Razorpay payment
+  if (
+    !razorpay_order_id ||
+    !razorpay_payment_id ||
+    !razorpay_signature
+  ) {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Missing payment verification details" },
+      { status: 400 }
+    )
   }
+
+  let signatureValid: boolean
+
+  try {
+    signatureValid = verifyRazorpaySignature({
+      orderId: razorpay_order_id,
+      paymentId: razorpay_payment_id,
+      signature: razorpay_signature,
+    })
+  } catch (err) {
+    return NextResponse.json<ApiResponse<never>>(
+      {
+        error:
+          err instanceof Error
+            ? err.message
+            : "Signature verification failed",
+      },
+      { status: 500 }
+    )
+  }
+
+  if (!signatureValid) {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Payment verification failed" },
+      { status: 400 }
+    )
+  }
+
+  // Fetch payment and order from Razorpay for additional validation
+  let payment: Awaited<ReturnType<typeof fetchRazorpayPayment>>
+  let rpOrder: Awaited<ReturnType<typeof fetchRazorpayOrder>>
+  try {
+    payment = await fetchRazorpayPayment(razorpay_payment_id)
+    rpOrder = await fetchRazorpayOrder(razorpay_order_id)
+  } catch (err) {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Failed to fetch payment details from Razorpay" },
+      { status: 500 }
+    )
+  }
+
+  // Handle authorized status with retries
+  if (payment.status === "authorized") {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await new Promise(res => setTimeout(res, 1000))
+      try {
+        payment = await fetchRazorpayPayment(razorpay_payment_id)
+      } catch {
+        // ignore fetch errors during retry
+      }
+      if (payment.status === "captured") break
+    }
+    if (payment.status !== "captured") {
+      return NextResponse.json<ApiResponse<never>>(
+        { error: "Payment not captured yet" },
+        { status: 409 }
+      )
+    }
+  } else if (payment.status !== "captured") {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Payment not captured" },
+      { status: 400 }
+    )
+  }
+
+  // Validate payment and order details
+  const expectedHash = cartHash(items)
+  if (
+    payment.order_id !== razorpay_order_id ||
+    payment.amount !== totalPaise ||
+    payment.currency !== "INR" ||
+    rpOrder.amount !== totalPaise ||
+    rpOrder.notes?.user_id !== user.id ||
+    rpOrder.notes?.cart_hash !== expectedHash
+  ) {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Payment details mismatch" },
+      { status: 400 }
+    )
+  }
+
+  const orderStatus: Order["status"] = "paid"
+  const timelineNote = "Payment confirmed"
 
   const serviceSupabase = createServiceSupabaseClient()
 
@@ -270,95 +249,62 @@ export async function POST(request: Request) {
       timestamp: new Date().toISOString(),
       note: "Order placed",
     },
-  ]
-
-  if (orderStatus !== "pending") {
-    statusHistory.push({
+    {
       status: orderStatus,
       timestamp: new Date().toISOString(),
       note: timelineNote,
+    },
+  ]
+
+  // The order row already exists as 'pending' (created at
+  // /api/payment/create-order time), possibly already confirmed by the
+  // webhook if it won the race. Update it in place, matched by
+  // razorpay_order_id + user_id, guarded to only touch a still-pending row.
+  const { data: updated, error: updError } = await serviceSupabase
+    .from("orders")
+    .update({
+      status: orderStatus,
+      status_history: statusHistory,
+      razorpay_payment_id,
+      razorpay_signature,
+      shipping_address,
     })
-  }
+    .eq("razorpay_order_id", razorpay_order_id)
+    .eq("user_id", user.id)
+    .eq("status", "pending")
+    .select()
+    .maybeSingle();
 
   let order;
-
-  if (payment_method === "online" && razorpay_payment_id) {
-    // The order row already exists as 'pending' (created at
-    // /api/payment/create-order time), possibly already confirmed by the
-    // webhook if it won the race. Update it in place, matched by
-    // razorpay_order_id + user_id, guarded to only touch a still-pending row.
-    const { data: updated, error: updError } = await serviceSupabase
-      .from("orders")
-      .update({
-        status: orderStatus,
-        status_history: statusHistory,
-        razorpay_payment_id,
-        razorpay_signature,
-        shipping_address,
-      })
-      .eq("razorpay_order_id", razorpay_order_id)
-      .eq("user_id", user.id)
-      .eq("status", "pending")
-      .select()
-      .maybeSingle();
-
-    if (updError) {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: updError.message ?? "Failed to confirm order" },
-        { status: 500 }
-      );
-    }
-
-    if (!updated) {
-      // No pending row matched — the webhook likely already confirmed it.
-      // Fetch and return the existing order untouched.
-      const { data: existing, error: fetchError } = await serviceSupabase
-        .from("orders")
-        .select("*")
-        .eq("razorpay_order_id", razorpay_order_id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (fetchError || !existing) {
-        return NextResponse.json<ApiResponse<never>>(
-          { error: "Order not found for this payment" },
-          { status: 404 }
-        );
-      }
-      order = existing;
-    } else {
-      order = updated;
-    }
-  } else {
-    // COD or other methods – normal insert
-    const { data: inserted, error: insertError } = await serviceSupabase
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        status: orderStatus,
-        status_history: statusHistory,
-        total: totalPaise,
-        shipping_address,
-        payment_method,
-        ...(payment_method === "online" && {
-          razorpay_order_id,
-          razorpay_payment_id,
-          razorpay_signature,
-        }),
-      })
-      .select()
-      .single();
-
-    if (insertError || !inserted) {
-      return NextResponse.json<ApiResponse<never>>(
-        { error: insertError?.message ?? "Failed to create order" },
-        { status: 500 }
-      );
-    }
-    order = inserted;
+  if (updError) {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: updError.message ?? "Failed to confirm order" },
+      { status: 500 }
+    );
   }
 
-  // Insert order_items with upsert (ignore duplicates) for both new and existing orders
+  if (!updated) {
+    // No pending row matched — the webhook likely already confirmed it.
+    // Fetch and return the existing order untouched.
+    const { data: existing, error: fetchError } = await serviceSupabase
+      .from("orders")
+      .select("*")
+      .eq("razorpay_order_id", razorpay_order_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (fetchError || !existing) {
+      return NextResponse.json<ApiResponse<never>>(
+        { error: "Order not found for this payment" },
+        { status: 404 }
+      );
+    }
+    order = existing;
+  } else {
+    order = updated;
+  }
+
+  // Insert order_items with upsert (ignore duplicates)
   const orderItems = items.map((item) => ({
     order_id: order.id,
     product_id: item.productId,

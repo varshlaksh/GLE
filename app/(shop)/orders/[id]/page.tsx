@@ -85,16 +85,11 @@ export default function OrderDetailPage() {
             })}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {order.payment_method === "cod" && (
-            <span className="rounded-full bg-clay/10 px-3 py-1.5 text-sm font-medium text-clay-dark">
-              Cash on Delivery
+<div className="flex items-center gap-2">
+            <span className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize ${STATUS_STYLES[order.status]}`}>
+              {order.status}
             </span>
-          )}
-          <span className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize ${STATUS_STYLES[order.status]}`}>
-            {order.status}
-          </span>
-        </div>
+          </div>
       </div>
 
       {/* Timeline — Amazon/Flipkart style */}

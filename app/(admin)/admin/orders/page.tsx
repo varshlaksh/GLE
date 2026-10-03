@@ -118,11 +118,6 @@ export default function AdminOrdersPage() {
                 </div>
 
                 <div className="flex flex-col items-end gap-2">
-                  {order.payment_method === "cod" && (
-                    <span className="rounded-full bg-clay/10 px-3 py-1 text-xs font-medium text-clay-dark">
-                      COD
-                    </span>
-                  )}
                   <span className={`rounded-full px-3 py-1 text-xs font-medium capitalize ${statusStyles[order.status]}`}>
                     {order.status}
                   </span>

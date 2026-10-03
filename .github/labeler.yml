@@ -1,17 +1,27 @@
 frontend:
-  - app/(shop)/**
-  - components/**
+  - changed-files:
+      - any-glob-to-any-file:
+          - "app/(shop)/**"
+          - "components/**"
 
 backend:
-  - app/api/**
+  - changed-files:
+      - any-glob-to-any-file:
+          - "app/api/**"
 
 admin:
-  - app/(admin)/**
+  - changed-files:
+      - any-glob-to-any-file:
+          - "app/(admin)/**"
 
 config:
-  - next.config.ts
-  - package.json
-  - tsconfig.json
+  - changed-files:
+      - any-glob-to-any-file:
+          - "next.config.ts"
+          - "package.json"
+          - "tsconfig.json"
 
 database:
-  - supabase/**
+  - changed-files:
+      - any-glob-to-any-file:
+          - "supabase/**"
