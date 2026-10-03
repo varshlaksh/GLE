@@ -61,7 +61,7 @@ export interface Order {
   total:            number
   shipping_address: ShippingAddress
   status_history:   OrderTimelineEntry[]
-  payment_method:   'online' | 'cod'
+  payment_method:   'online'
   razorpay_order_id?:  string
   razorpay_payment_id?: string
   created_at:       string
@@ -69,9 +69,8 @@ export interface Order {
 
 // ── Store Settings ────────────────────────────────────
 export interface StoreSettings {
-  id:          number
-  cod_enabled: boolean
-  updated_at:  string
+  id:         number
+  updated_at: string
 }
 
 // ── Profile ───────────────────────────────────────────

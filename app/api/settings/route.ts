@@ -12,16 +12,16 @@ export async function GET() {
       .single()
 
     if (error || !data) {
-      // Table not migrated yet or no row — default to COD disabled
+      // Table not migrated yet or no row
       return NextResponse.json<ApiResponse<StoreSettings>>({
-        data: { id: 1, cod_enabled: false, updated_at: new Date().toISOString() },
+        data: { id: 1, updated_at: new Date().toISOString() },
       })
     }
 
     return NextResponse.json<ApiResponse<StoreSettings>>({ data })
   } catch {
     return NextResponse.json<ApiResponse<StoreSettings>>({
-      data: { id: 1, cod_enabled: false, updated_at: new Date().toISOString() },
+      data: { id: 1, updated_at: new Date().toISOString() },
     })
   }
 }

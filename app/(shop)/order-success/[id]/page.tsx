@@ -57,16 +57,9 @@ export default function OrderSuccessPage() {
         <div className="mt-8 w-full rounded-2xl border border-sand-dark/60 bg-white p-6 text-left">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg text-ink">Order summary</h2>
-            <div className="flex items-center gap-2">
-              {order.payment_method === "cod" && (
-                <span className="rounded-full bg-clay/10 px-3 py-1 text-xs font-medium text-clay-dark">
-                  Cash on Delivery
-                </span>
-              )}
-              <span className="rounded-full bg-sand px-3 py-1 text-xs font-medium capitalize text-ink/70">
-                {order.status}
-              </span>
-            </div>
+            <span className="rounded-full bg-sand px-3 py-1 text-xs font-medium capitalize text-ink/70">
+              {order.status}
+            </span>
           </div>
 
           <ul className="mt-4 space-y-2 text-sm">
