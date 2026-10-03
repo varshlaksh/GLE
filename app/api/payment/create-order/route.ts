@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { requireUser } from "@/lib/adminAuth"
 import { createRazorpayOrder, cartHash } from "@/lib/razorpay"
 import { createServiceSupabaseClient } from "@/lib/supabase-server"
-import type { ApiResponse } from "@/types"
+import type { ApiResponse, ShippingAddress } from "@/types"
 
 interface CartItemInput {
   productId: string
@@ -11,6 +11,7 @@ interface CartItemInput {
 
 interface CreateOrderBody {
   items: CartItemInput[]
+  shipping_address: ShippingAddress
 }
 
 const MAX_QUANTITY = 99
@@ -58,6 +59,30 @@ export async function POST(request: Request) {
     if (item.quantity > MAX_QUANTITY) {
       return NextResponse.json<ApiResponse<never>>(
         { error: `Quantity exceeds maximum allowed (${MAX_QUANTITY})` },
+        { status: 400 }
+      )
+    }
+  }
+
+  const { shipping_address } = body
+  if (!shipping_address) {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Shipping address is required" },
+      { status: 400 }
+    )
+  }
+  const requiredAddressFields: (keyof ShippingAddress)[] = [
+    "full_name",
+    "phone",
+    "line1",
+    "city",
+    "state",
+    "pincode",
+  ]
+  for (const field of requiredAddressFields) {
+    if (!shipping_address[field]?.trim()) {
+      return NextResponse.json<ApiResponse<never>>(
+        { error: `Missing required address field: ${field}` },
         { status: 400 }
       )
     }
@@ -141,7 +166,7 @@ export async function POST(request: Request) {
         status: "pending",
         status_history: statusHistory,
         total: totalPaise,
-        shipping_address: {},
+        shipping_address,
         payment_method: "online",
         razorpay_order_id: razorpayOrder.id,
       })

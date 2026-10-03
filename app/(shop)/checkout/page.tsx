@@ -71,7 +71,7 @@ export default function CheckoutPage() {
       const createRes = await fetch("/api/payment/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: cartItems }),
+        body: JSON.stringify({ items: cartItems, shipping_address: address }),
       });
       const createData = await createRes.json();
       if (!createRes.ok || createData.error) {
