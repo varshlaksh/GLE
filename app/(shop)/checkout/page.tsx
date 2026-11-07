@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import Script from "next/script";
 import { useCartStore } from "@/lib/cartStore";
 import { useUser } from "@/lib/auth";
@@ -295,7 +296,7 @@ export default function CheckoutPage() {
                 <li key={product.id} className="flex items-center gap-3 py-3">
                   <div className="h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-sand-dark/40 bg-sand">
                     {product.images?.[0]
-                      ? <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover" />
+                      ? <Image src={product.images[0]} alt={product.name} width={48} height={48} className="h-full w-full object-cover" />
                       : <span className="flex h-full w-full items-center justify-center text-[10px] text-ink/30">IMG</span>
                     }
                   </div>

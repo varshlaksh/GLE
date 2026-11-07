@@ -15,7 +15,11 @@ const FAQS = [
   },
   {
     q: "Do you offer custom sizing or finishes?",
-    a: "Custom requests are considered on a case-by-case basis. Contact us with your requirements and we'll let you know what's possible.",
+    a: "Yes. Contact our owner and support team through the WhatsApp button for custom pieces, product guidance, home interior solutions, and offline purchase options.",
+  },
+  {
+    q: "Do you ship internationally?",
+    a: "International shipping is available on request. Destination availability, delivery time, and charges are confirmed by our team on WhatsApp before you order.",
   },
   {
     q: "How do I track my order?",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signUp } from "@/lib/auth";
+import { signUp, resendConfirmation, AuthError } from "@/lib/auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -13,6 +13,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +23,8 @@ export default function SignupPage() {
       setError("Passwords do not match");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
       return;
     }
 
@@ -31,11 +32,28 @@ export default function SignupPage() {
     try {
       await signUp(email, password);
       setSuccess(true);
-      setTimeout(() => router.push("/login"), 2000);
+      setTimeout(() => router.push("/login"), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      if (err instanceof AuthError && (err.code === 'user_already_exists' || err.code === 'email_exists')) {
+        setError("An account with this email already exists. Please sign in or reset your password.");
+      } else {
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) return;
+    setResendLoading(true);
+    try {
+      await resendConfirmation(email);
+      setError("Confirmation email resent. Please check your inbox.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resend confirmation email");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -47,6 +65,15 @@ export default function SignupPage() {
           We&apos;ve sent a confirmation link to <strong>{email}</strong>.
           Redirecting you to sign in...
         </p>
+        <div className="mt-6">
+          <button
+            onClick={handleResendConfirmation}
+            disabled={resendLoading}
+            className="text-sm text-clay hover:text-clay-dark underline disabled:opacity-60"
+          >
+            {resendLoading ? "Sending..." : "Resend confirmation email"}
+          </button>
+        </div>
       </div>
     );
   }
@@ -87,7 +114,7 @@ export default function SignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="mt-1.5 w-full rounded-lg border border-sand-dark bg-white px-3.5 py-2.5 text-sm text-ink focus:border-clay focus:outline-none focus:ring-2 focus:ring-clay/20"
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
           />
         </div>
 

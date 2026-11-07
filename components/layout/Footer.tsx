@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { MessageCircle, CreditCard, Smartphone, Landmark, Truck, ShieldCheck } from "lucide-react";
+import { MessageCircle, CreditCard, Smartphone, Landmark, ShieldCheck } from "lucide-react";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { BUSINESS_DETAILS, getWhatsAppUrl } from "@/lib/business-details";
 
 const QUICK_LINKS = [
   { href: "/about",    label: "About Us" },
@@ -11,13 +12,8 @@ const QUICK_LINKS = [
   { href: "/faq",      label: "FAQs" },
 ];
 
-// TODO: replace these with your real details
-const WHATSAPP_NUMBER = "919528783702";              // e.g. "919876543210", no + or spaces
 const INSTAGRAM_URL   = "https://instagram.com/theganagallery";
 const FACEBOOK_URL    = "https://facebook.com/theganagallery";
-const SUPPORT_PHONE   = "+91 6399937135";
-const SUPPORT_EMAIL   = "theganagallery@gmail.com";
-const ADDRESS         = "Meerut, Uttar Pradesh, India";
 const GSTIN           = "09BMZPK6472L1ZX";           // your actual GSTIN, or remove this line until registered
 
 // Only shows categories that actually have at least one active product,
@@ -40,7 +36,7 @@ export default async function Footer() {
   return (
     <footer className="border-t border-sand-dark/70 bg-sand-dark/40">
       <div className="mx-auto max-w-6xl px-6 py-14">
-        <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-4">
+        <div className="grid justify-items-center gap-10 text-center sm:grid-cols-2 md:grid-cols-4">
 
           {/* Brand — logo sized and vertically centered against the wordmark */}
 <div className="md:col-span-1">
@@ -95,7 +91,7 @@ export default async function Footer() {
       </a>
 
       <a
-        href={`https://wa.me/${WHATSAPP_NUMBER}`}
+        href={getWhatsAppUrl("Hello, I would like help with TheGanaGallery products or services.")}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="WhatsApp"
@@ -131,9 +127,19 @@ export default async function Footer() {
           <div>
             <h3 className="text-xs font-medium uppercase tracking-wider text-clay">Contact Us</h3>
             <div className="mt-4 space-y-2.5 text-sm text-ink/70">
-              <p>{SUPPORT_PHONE}</p>
-              <p>{SUPPORT_EMAIL}</p>
-              <p className="max-w-[190px]">{ADDRESS}</p>
+              <div className="flex flex-col gap-1">
+                {BUSINESS_DETAILS.supportPhones.map((phone) => (
+                  <a key={phone.href} href={phone.href} className="transition-colors hover:text-clay">
+                    {phone.display}
+                  </a>
+                ))}
+              </div>
+              <p>
+                <a href={`mailto:${BUSINESS_DETAILS.supportEmail}`} className="transition-colors hover:text-clay">
+                  {BUSINESS_DETAILS.supportEmail}
+                </a>
+              </p>
+              <p className="mx-auto max-w-[190px]">{BUSINESS_DETAILS.address}</p>
             </div>
           </div>
 

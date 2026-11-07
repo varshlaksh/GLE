@@ -4,15 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/lib/mockData";
 import type { Order, OrderStatus } from "@/types";
-
-const STATUS_OPTIONS: OrderStatus[] = [
-  "pending",
-  "paid",
-  "processing",
-  "shipped",
-  "delivered",
-  "cancelled",
-];
+import { ADMIN_STATUS_TRANSITIONS } from "@/lib/order-status";
 
 const statusStyles: Record<OrderStatus, string> = {
   pending: "bg-sand text-ink/70",
@@ -21,6 +13,8 @@ const statusStyles: Record<OrderStatus, string> = {
   shipped: "bg-clay/10 text-clay-dark",
   delivered: "bg-moss/10 text-moss",
   cancelled: "bg-ink/10 text-ink/60",
+  failed: "bg-clay/10 text-clay-dark",
+  refunded: "bg-sand text-ink/70",
 };
 
 export default function AdminOrdersPage() {
@@ -39,6 +33,7 @@ export default function AdminOrdersPage() {
   }, []);
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
+    setError(null);
     setUpdatingId(orderId);
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
@@ -123,11 +118,15 @@ export default function AdminOrdersPage() {
                   </span>
                   <select
                     value={order.status}
-                    disabled={updatingId === order.id}
+                    disabled={
+                      updatingId === order.id ||
+                      ADMIN_STATUS_TRANSITIONS[order.status].length === 0
+                    }
                     onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                    aria-label={`Update order ${order.id.slice(0, 8)} status`}
                     className="rounded-lg border border-sand-dark bg-white px-2.5 py-1.5 text-xs font-medium text-ink focus:border-clay focus:outline-none focus:ring-2 focus:ring-clay/20"
                   >
-                    {STATUS_OPTIONS.map((status) => (
+                    {[order.status, ...ADMIN_STATUS_TRANSITIONS[order.status]].map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>

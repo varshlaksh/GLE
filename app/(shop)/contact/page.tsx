@@ -1,11 +1,7 @@
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
+import { BUSINESS_DETAILS, getWhatsAppUrl } from "@/lib/business-details";
 
 export const metadata = { title: "Contact Us | TheGanaGallery" };
-
-// TODO: replace with your real details
-const SUPPORT_EMAIL = "theganagallery@gmail.com";
-const SUPPORT_PHONE = "+91 9897965454";
-const ADDRESS = "Meerut, Uttar Pradesh, India";
 
 export default function ContactPage() {
   return (
@@ -16,27 +12,52 @@ export default function ContactPage() {
         Questions about an order, a product, or a custom request? We usually reply within a day.
       </p>
 
+      <div className="mt-8 rounded-2xl border border-sand-dark/60 bg-white p-6">
+        <h2 className="font-display text-xl text-ink">Personal assistance on WhatsApp</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink/70">
+          Connect directly with our owner and support team for product help, custom pieces,
+          home interior solutions, or offline purchase options.
+        </p>
+        <a
+          href={getWhatsAppUrl("Hello, I would like help with customization, home interior solutions, or an offline purchase.")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          <MessageCircle size={17} aria-hidden="true" />
+          Chat with our team
+        </a>
+      </div>
+
       <div className="mt-10 grid gap-10 md:grid-cols-2">
         <div className="space-y-5">
           <div className="flex items-start gap-3">
             <Mail className="mt-0.5 text-clay" size={18} />
             <div>
               <p className="text-sm font-medium text-ink">Email</p>
-              <a href={`mailto:${SUPPORT_EMAIL}`} className="text-sm text-ink/70 hover:text-clay">{SUPPORT_EMAIL}</a>
+              <a href={`mailto:${BUSINESS_DETAILS.supportEmail}`} className="text-sm text-ink/70 hover:text-clay">
+                {BUSINESS_DETAILS.supportEmail}
+              </a>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <Phone className="mt-0.5 text-clay" size={18} />
             <div>
               <p className="text-sm font-medium text-ink">Phone</p>
-              <p className="text-sm text-ink/70">{SUPPORT_PHONE}</p>
+              <div className="flex flex-col">
+                {BUSINESS_DETAILS.supportPhones.map((phone) => (
+                  <a key={phone.href} href={phone.href} className="text-sm text-ink/70 hover:text-clay">
+                    {phone.display}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
           <div className="flex items-start gap-3">
             <MapPin className="mt-0.5 text-clay" size={18} />
             <div>
               <p className="text-sm font-medium text-ink">Address</p>
-              <p className="text-sm text-ink/70">{ADDRESS}</p>
+              <p className="text-sm text-ink/70">{BUSINESS_DETAILS.address}</p>
             </div>
           </div>
         </div>
@@ -46,7 +67,7 @@ export default function ContactPage() {
             /api/contact route that emails you (e.g. via Resend/SendGrid) —
             ask me for that build once you're ready. */}
         <form
-          action={`mailto:${SUPPORT_EMAIL}`}
+          action={`mailto:${BUSINESS_DETAILS.supportEmail}`}
           method="post"
           encType="text/plain"
           className="space-y-4 rounded-2xl border border-sand-dark/60 bg-white p-6"

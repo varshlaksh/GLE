@@ -15,7 +15,6 @@ function ProductsContent() {
 
   useEffect(() => {
     let active = true;
-    setProducts(null);
     fetch("/api/products")
       .then((r) => r.json())
       .then((j) => { if (active) setProducts(j.data ?? []); })

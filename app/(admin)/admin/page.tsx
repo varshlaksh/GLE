@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { formatPrice } from "@/lib/mockData";
 import type { AdminDashboardStats, Order } from "@/types";
@@ -18,6 +18,8 @@ const STATUS_COLORS: Record<string, string> = {
   shipped:    "#92402b",
   delivered:  "#2b2420",
   cancelled:  "#9ca3af",
+  failed:     "#b91c1c",
+  refunded:   "#6b7280",
 };
 
 // ── Custom pie label — shows only for segments > 5%

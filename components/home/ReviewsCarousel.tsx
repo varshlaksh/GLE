@@ -210,6 +210,7 @@ function SubmitReviewModal({ onClose, onSuccess }: { onClose: () => void; onSucc
 // ── Main Carousel Component ─────────────────────────────
 export default function ReviewsCarousel() {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
   const [current, setCurrent] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -218,7 +219,9 @@ export default function ReviewsCarousel() {
   useEffect(() => {
     fetch("/api/reviews")
       .then(r => r.json())
-      .then(j => setReviews(j.data ?? []));
+      .then(j => setReviews(j.data ?? []))
+      .catch(() => setReviews([]))
+      .finally(() => setLoading(false));
   }, []);
 
   // Cards per slide based on width
@@ -237,6 +240,7 @@ export default function ReviewsCarousel() {
   const totalSlides = Math.max(1, reviews.length - perPage + 1);
 
   const startAuto = () => {
+    if (reviews.length <= perPage || intervalRef.current) return;
     intervalRef.current = setInterval(() => {
       setCurrent(c => (c + 1) % totalSlides);
     }, 4000);
@@ -244,6 +248,7 @@ export default function ReviewsCarousel() {
 
   const stopAuto = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = null;
   };
 
   useEffect(() => {
@@ -257,7 +262,6 @@ export default function ReviewsCarousel() {
 
   const visibleReviews = reviews.slice(current, current + perPage);
 
-  if (reviews.length === 0) return null;
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
@@ -289,14 +293,25 @@ export default function ReviewsCarousel() {
       {/* Carousel */}
       <div className="relative" onMouseEnter={stopAuto} onMouseLeave={startAuto}>
         {/* Cards */}
-        <div
-          className="grid gap-4 transition-all duration-500"
-          style={{ gridTemplateColumns: `repeat(${perPage}, 1fr)` }}
-        >
-          {visibleReviews.map(review => (
-            <ReviewCard key={review.id} review={review} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="rounded-2xl border border-sand-dark/60 bg-white px-6 py-10 text-center text-sm text-ink/60">
+            Loading reviews…
+          </div>
+        ) : reviews.length === 0 ? (
+          <div className="rounded-2xl border border-sand-dark/60 bg-white px-6 py-10 text-center">
+            <p className="font-display text-2xl text-ink">Be the first to share your experience</p>
+            <p className="mt-2 text-sm text-ink/60">Your review will appear here after admin approval.</p>
+          </div>
+        ) : (
+          <div
+            className="grid gap-4 transition-all duration-500"
+            style={{ gridTemplateColumns: `repeat(${perPage}, 1fr)` }}
+          >
+            {visibleReviews.map(review => (
+              <ReviewCard key={review.id} review={review} />
+            ))}
+          </div>
+        )}
 
         {/* Nav arrows */}
         {reviews.length > perPage && (

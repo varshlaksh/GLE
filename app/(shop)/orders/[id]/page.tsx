@@ -22,6 +22,16 @@ const STATUS_STYLES: Record<string, string> = {
   shipped:    "bg-clay/10 text-clay-dark",
   delivered:  "bg-moss/10 text-moss",
   cancelled:  "bg-ink/10 text-ink/60",
+  failed:     "bg-clay/10 text-clay-dark",
+  refunded:   "bg-sand text-ink/70",
+};
+
+const TERMINAL_STATUS_DETAILS: Partial<
+  Record<OrderStatus, { title: string; symbol: string }>
+> = {
+  cancelled: { title: "Order cancelled", symbol: "✕" },
+  failed: { title: "Payment failed", symbol: "!" },
+  refunded: { title: "Payment refunded", symbol: "↩" },
 };
 
 export default function OrderDetailPage() {
@@ -65,7 +75,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  const isCancelled = order.status === "cancelled";
+  const terminalStatus = TERMINAL_STATUS_DETAILS[order.status];
   const currentStepIndex = TIMELINE_STEPS.findIndex(s => s.status === order.status);
 
   return (
@@ -96,14 +106,14 @@ export default function OrderDetailPage() {
       <div className="mt-8 rounded-2xl border border-sand-dark/60 bg-white p-6">
         <h2 className="mb-6 font-display text-lg text-ink">Order tracking</h2>
 
-        {isCancelled ? (
+        {terminalStatus ? (
           <div className="flex items-center gap-3 rounded-xl bg-ink/5 px-4 py-3">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink/15 text-ink/60">✕</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ink/15 text-ink/60">{terminalStatus.symbol}</span>
             <div>
-              <p className="text-sm font-semibold text-ink">Order cancelled</p>
+              <p className="text-sm font-semibold text-ink">{terminalStatus.title}</p>
               <p className="text-xs text-ink/50">
-                {order.status_history?.find(h => h.status === "cancelled")?.timestamp &&
-                  new Date(order.status_history.find(h => h.status === "cancelled")!.timestamp)
+                {order.status_history?.find(h => h.status === order.status)?.timestamp &&
+                  new Date(order.status_history.find(h => h.status === order.status)!.timestamp)
                     .toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>

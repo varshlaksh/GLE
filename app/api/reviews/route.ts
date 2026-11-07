@@ -2,18 +2,6 @@ import { NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import type { ApiResponse } from "@/types"
 
-export interface Review {
-  id: string
-  name: string
-  email: string
-  location: string
-  rating: number
-  quote: string
-  avatar_url: string | null
-  is_approved: boolean
-  created_at: string
-}
-
 // GET /api/reviews — public, returns only approved reviews
 export async function GET() {
   const supabase = await createServerSupabaseClient()
@@ -49,7 +37,7 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("reviews")
     .insert({
       name:      body.name.trim(),
@@ -60,12 +48,17 @@ export async function POST(request: Request) {
       avatar_url: body.avatar_url ?? null,
       is_approved: false,
     })
-    .select()
-    .single()
 
   if (error) {
-    return NextResponse.json<ApiResponse<never>>({ error: error.message }, { status: 500 })
+    console.error("Review submission failed", error)
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Unable to submit review. Please try again." },
+      { status: 500 }
+    )
   }
 
-  return NextResponse.json<ApiResponse<Review>>({ data, message: "Review submitted! It will appear after admin approval." }, { status: 201 })
+  return NextResponse.json<ApiResponse<never>>(
+    { message: "Review submitted! It will appear after admin approval." },
+    { status: 201 }
+  )
 }

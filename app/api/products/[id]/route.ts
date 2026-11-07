@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import type { ApiResponse, Product } from "@/types";
+import type { ApiResponse } from "@/types";
 
 export async function DELETE(
   _request: Request,

@@ -191,7 +191,7 @@ export async function POST(request: Request) {
   try {
     payment = await fetchRazorpayPayment(razorpay_payment_id)
     rpOrder = await fetchRazorpayOrder(razorpay_order_id)
-  } catch (err) {
+  } catch {
     return NextResponse.json<ApiResponse<never>>(
       { error: "Failed to fetch payment details from Razorpay" },
       { status: 500 }

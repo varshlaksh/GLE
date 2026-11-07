@@ -16,7 +16,7 @@ export default function ReturnsPage() {
         </section>
         <section>
           <h2 className="mb-2 font-display text-lg text-ink">How to request a return</h2>
-          <p>Contact us at our support email with your order number and reason for return. We'll confirm eligibility and share pickup/drop-off instructions.</p>
+          <p>Contact us at our support email with your order number and reason for return. We&apos;ll confirm eligibility and share pickup/drop-off instructions.</p>
         </section>
         <section>
           <h2 className="mb-2 font-display text-lg text-ink">Refunds</h2>
@@ -25,7 +25,7 @@ export default function ReturnsPage() {
         </section>
         <section>
           <h2 className="mb-2 font-display text-lg text-ink">Damaged or incorrect items</h2>
-          <p>If you receive a damaged, defective, or incorrect item, contact us within 48 hours of delivery with photos — we'll arrange a free replacement or full refund, no return shipping cost to you.</p>
+          <p>If you receive a damaged, defective, or incorrect item, contact us within 48 hours of delivery with photos — we&apos;ll arrange a free replacement or full refund, no return shipping cost to you.</p>
         </section>
       </div>
     </div>

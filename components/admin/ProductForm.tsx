@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase-browser";
@@ -34,7 +34,7 @@ function toFormValues(product?: Product): FormValues {
 export default function ProductForm({ product }: { product?: Product }) {
   const router   = useRouter();
   const isEdit   = Boolean(product);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const [values, setValues]         = useState<FormValues>(toFormValues(product));
   const [error,  setError]          = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -54,7 +54,7 @@ export default function ProductForm({ product }: { product?: Product }) {
       if (!error && data) setCategories(data);
     }
     loadCategories();
-  }, []);
+  }, [supabase]);
 
   const set = <K extends keyof FormValues>(k: K, v: FormValues[K]) =>
     setValues(prev => ({ ...prev, [k]: v }));

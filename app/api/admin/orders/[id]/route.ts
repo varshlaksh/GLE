@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/adminAuth"
 import type { ApiResponse, Order, OrderStatus, OrderTimelineEntry } from "@/types"
-
-const VALID_STATUSES: OrderStatus[] = [
-  "pending","paid","processing","shipped","delivered","cancelled",
-]
+import {
+  canAdminTransitionOrder,
+  isOrderStatus,
+  ORDER_STATUSES,
+} from "@/lib/order-status"
 
 const STATUS_NOTES: Record<OrderStatus, string> = {
   pending:    "Order received, awaiting payment",
@@ -13,6 +14,8 @@ const STATUS_NOTES: Record<OrderStatus, string> = {
   shipped:    "Order has been shipped",
   delivered:  "Order delivered successfully",
   cancelled:  "Order cancelled",
+  failed:     "Payment failed",
+  refunded:   "Payment refunded",
 }
 
 export async function PATCH(
@@ -29,9 +32,9 @@ export async function PATCH(
   try { body = await request.json() }
   catch { return NextResponse.json<ApiResponse<never>>({ error: "Invalid body" }, { status: 400 }) }
 
-  if (!body.status || !VALID_STATUSES.includes(body.status)) {
+  if (!isOrderStatus(body.status)) {
     return NextResponse.json<ApiResponse<never>>(
-      { error: `status must be one of: ${VALID_STATUSES.join(", ")}` },
+      { error: `status must be one of: ${ORDER_STATUSES.join(", ")}` },
       { status: 400 }
     )
   }
@@ -39,12 +42,31 @@ export async function PATCH(
   // Fetch current order to get existing history
   const { data: existing, error: fetchError } = await supabase
     .from("orders")
-    .select("status_history")
+    .select("status, status_history")
     .eq("id", id)
     .single()
 
   if (fetchError || !existing) {
     return NextResponse.json<ApiResponse<never>>({ error: "Order not found" }, { status: 404 })
+  }
+
+  if (!isOrderStatus(existing.status)) {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "This order has an unsupported status" },
+      { status: 409 }
+    )
+  }
+
+  if (!canAdminTransitionOrder(existing.status, body.status)) {
+    return NextResponse.json<ApiResponse<never>>(
+      {
+        error:
+          existing.status === "pending" && body.status === "paid"
+            ? "Payment confirmation is controlled by Razorpay and cannot be set manually"
+            : `Cannot change order status from ${existing.status} to ${body.status}`,
+      },
+      { status: 409 }
+    )
   }
 
   const newEntry: OrderTimelineEntry = {
@@ -65,13 +87,21 @@ export async function PATCH(
       status_history: updatedHistory,
     })
     .eq("id", id)
+    .eq("status", existing.status)
     .select("*, items:order_items(*, product:products(*))")
-    .single()
+    .maybeSingle()
 
-  if (dbError || !data) {
+  if (dbError) {
     return NextResponse.json<ApiResponse<never>>(
-      { error: dbError?.message ?? "Order not found" },
-      { status: 404 }
+      { error: dbError.message },
+      { status: 500 }
+    )
+  }
+
+  if (!data) {
+    return NextResponse.json<ApiResponse<never>>(
+      { error: "Order status changed elsewhere. Refresh and try again." },
+      { status: 409 }
     )
   }
 
