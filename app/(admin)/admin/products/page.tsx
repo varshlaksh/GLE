@@ -140,14 +140,14 @@ export default function AdminProductsPage() {
 
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${(product as any).is_archived
+                      className={`rounded-full px-2.5 py-1 text-xs font-medium ${product.is_archived
                           ? "bg-clay/10 text-clay"
                           : product.is_active
                             ? "bg-moss/10 text-moss"
                             : "bg-ink/10 text-ink/60"
                         }`}
                     >
-                      {(product as any).is_archived
+                      {product.is_archived
                         ? "Archived"
                         : product.is_active
                           ? "Active"

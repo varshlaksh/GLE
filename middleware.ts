@@ -39,8 +39,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    // Skip static files and _next internals
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  // Only admin pages need a server-side auth check. Keeping public pages out of
+  // middleware lets the storefront render even if Supabase is temporarily slow.
+  matcher: ['/admin/:path*'],
 }

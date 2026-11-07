@@ -11,6 +11,7 @@ export interface Product {
   categories?:  { name: string; slug: string } | null;
   stock:       number
   is_active:   boolean
+  is_archived?: boolean
   created_at:  string
 }
 
@@ -28,6 +29,8 @@ export type OrderStatus =
   | 'shipped'
   | 'delivered'
   | 'cancelled'
+  | 'failed'
+  | 'refunded'
 
 export interface OrderTimelineEntry {
   status:    OrderStatus

@@ -1,4 +1,5 @@
 import CollectionCard, { type CollectionItem } from "./CollectionCard";
+import Link from "next/link";
 
 const collections: CollectionItem[] = [
   {
@@ -60,12 +61,12 @@ export default function CollectionsSection() {
               Explore our handpicked collections — each piece telling a story of craft and culture.
             </p>
           </div>
-          <a
+          <Link
             href="/products"
             className="hidden text-sm font-semibold text-ink/70 transition-colors hover:text-clay sm:block"
           >
             View all products →
-          </a>
+          </Link>
         </div>
 
         {/* Grid — 2 cols mobile, 4 cols tablet, 4 cols desktop */}
@@ -76,12 +77,12 @@ export default function CollectionsSection() {
         </div>
 
         {/* Mobile view-all */}
-        <a
+        <Link
           href="/products"
           className="mt-8 block text-center text-sm font-semibold text-ink/70 hover:text-clay sm:hidden"
         >
           View all products →
-        </a>
+        </Link>
       </div>
     </section>
   );

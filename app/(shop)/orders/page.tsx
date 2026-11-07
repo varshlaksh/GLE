@@ -13,6 +13,8 @@ const statusStyles: Record<OrderStatus, string> = {
   shipped: "bg-clay/10 text-clay-dark",
   delivered: "bg-moss/10 text-moss",
   cancelled: "bg-ink/10 text-ink/60",
+  failed: "bg-clay/10 text-clay-dark",
+  refunded: "bg-sand text-ink/70",
 };
 
 export default function OrdersPage() {
@@ -23,7 +25,6 @@ export default function OrdersPage() {
   useEffect(() => {
     if (userLoading) return;
     if (!user) {
-      setOrders([]);
       return;
     }
     let active = true;

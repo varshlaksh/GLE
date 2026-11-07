@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/adminAuth"
-import { createClient } from "@supabase/supabase-js"
 import type { AdminDashboardStats, ApiResponse, Order } from "@/types"
+import { countsTowardRevenue } from "@/lib/order-status"
 
 export async function GET() {
   const { error, status, supabase } = await requireAdmin()
@@ -28,9 +28,7 @@ const [ordersRes, productsRes, profilesRes] = await Promise.all([
   const profiles = profilesRes.data ?? []
 
   // ── Basic stats ─────────────────────────────────────
-  const paidOrders = orders.filter(o =>
-    o.status !== "pending" && o.status !== "cancelled"
-  )
+  const paidOrders = orders.filter(o => countsTowardRevenue(o.status))
   const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.total ?? 0), 0)
 
   // ── Revenue by day (last 30 days) ───────────────────

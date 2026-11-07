@@ -1,22 +1,24 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import ProductCard from "@/components/product/ProductCard";
 import CollectionsSection from "@/components/home/CollectionsSection";
+import HeroCarousel from "@/components/home/HeroCarousel";
 import ReviewsCarousel from "@/components/home/ReviewsCarousel";
+import { homepageContent } from "@/lib/homepage-content";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import type { Product } from "@/types";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.ganagallery.shop";
 
 export const metadata: Metadata = {
-  title: "TheGanaGallery — Handcrafted Indian Decor & Art",
+  title: "3D Infinity Tunnel Tables & Custom Interiors — The Gana Gallery",
   description:
-    "Shop handcrafted Wall Decor, Cherial Art, Metal Ware, Carved Wooden Decor, Clock Art Paintings and more — made by skilled artisans across India.",
+    "Discover 3D infinity tunnel center tables, wall décor and custom interior solutions by Ganalaxmi Enterprises for homes, cafés, restaurants and reception spaces.",
   alternates: { canonical: SITE_URL },
   openGraph: {
-    title: "TheGanaGallery — Handcrafted Indian Decor & Art",
-    description: "Shop handcrafted Indian home decor from independent artisans.",
+    title: "3D Infinity Tunnel Tables by Ganalaxmi Enterprises",
+    description:
+      "Statement center tables, wall décor and custom interior solutions for homes and commercial spaces.",
     url: SITE_URL,
     images: [{ url: `${SITE_URL}/og-image.jpg`, width: 1200, height: 630 }],
   },
@@ -29,7 +31,9 @@ async function getFeaturedProducts(): Promise<Product[]> {
     .select("*, categories(name, slug)")
     .eq("is_active", true)
     .order("created_at", { ascending: false })
-    .limit(4);
+    .limit(4)
+    // Keep the static homepage available when Supabase is slow or offline.
+    .abortSignal(AbortSignal.timeout(3000));
   if (error || !data) return [];
   return data;
 }
@@ -40,46 +44,7 @@ export default async function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="border-b border-sand-dark/60 bg-sand">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 py-16 md:grid-cols-2 md:py-24">
-          <div>
-            <span className="text-sm font-medium uppercase tracking-widest text-clay">
-              Made by hand, chosen with care
-            </span>
-            <h1 className="mt-4 font-display text-4xl leading-tight text-ink sm:text-5xl md:text-6xl">
-              Everyday objects, woven and thrown by hand
-            </h1>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-ink/70">
-              TheGanaGallery brings together handcrafted decor from independent
-              makers — each piece carrying the small marks of the hands that
-              made it.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link
-                href="/products"
-                className="rounded-full bg-clay px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-clay-dark"
-              >
-                Shop the collection
-              </Link>
-              <Link
-                href="#collections"
-                className="rounded-full border border-ink/15 px-7 py-3 text-sm font-semibold text-ink transition-colors hover:border-clay hover:text-clay"
-              >
-                Browse collections
-              </Link>
-            </div>
-          </div>
-          <div className="relative aspect-[4/3] overflow-hidden rounded-3xl">
-            <Image
-              src="https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=1000&q=80"
-              alt="Handwoven baskets arranged on a shelf"
-              fill priority
-              sizes="(min-width: 768px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-        </div>
-      </section>
+      <HeroCarousel content={homepageContent} />
 
       {/* Featured */}
       {featured.length > 0 && (

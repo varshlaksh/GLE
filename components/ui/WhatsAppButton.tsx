@@ -1,8 +1,8 @@
 "use client";
 
-const WHATSAPP_NUMBER = "919897965454";
-const WHATSAPP_MESSAGE = encodeURIComponent("Hello, I am interested in your products.");
-const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MESSAGE}`;
+import { getWhatsAppUrl } from "@/lib/business-details";
+
+const WHATSAPP_URL = getWhatsAppUrl("Hello, I am interested in your products or services.");
 
 export default function WhatsAppButton() {
   return (

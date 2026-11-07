@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+prod_*.sql
+webhook-test.mjs
+test-*.js
+test-results/
+playwright-report/
+pnpm-lock.yaml

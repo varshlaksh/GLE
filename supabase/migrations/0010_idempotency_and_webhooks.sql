@@ -170,6 +170,17 @@ BEGIN
             p_payload -> 'payload' -> 'refund' -> 'entity' ->> 'payment_id'
         );
 
+        -- Validate refund status: only handle when status is exactly 'processed'
+        IF v_refund_status IS DISTINCT FROM 'processed' THEN
+            RETURN;
+        END IF;
+
+        -- Validate refund amount: must be present and positive
+        IF v_refund_amount IS NULL OR v_refund_amount <= 0 THEN
+            RAISE EXCEPTION 'invalid_refund_amount %', v_refund_amount
+                USING ERRCODE = 'P0002';
+        END IF;
+
         IF v_payment_id IS NULL THEN
             RETURN;
         END IF;
@@ -182,8 +193,8 @@ BEGIN
         WHERE razorpay_payment_id = v_payment_id;
 
         IF v_order_id IS NULL THEN
-            RAISE EXCEPTION 'order_not_found_for_payment_id %', v_payment_id
-                USING ERRCODE = 'P0001';
+            -- No matching order – nothing to do, return cleanly to avoid retries
+            RETURN;
         END IF;
 
         -- Insert refund record

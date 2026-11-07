@@ -87,7 +87,9 @@ export async function PATCH(
     return NextResponse.json<ApiResponse<never>>({ error: "Invalid request body" }, { status: 400 })
   }
 
-  const { id: _id, created_at: _createdAt, ...updates } = body
+  const updates = { ...body }
+  delete updates.id
+  delete updates.created_at
 
   const { data, error: dbError } = await db
     .from("products")
